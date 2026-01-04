@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinity Meet</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Orbitron:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Audio Effects -->
+        <audio id="audio-join" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+        <audio id="audio-message" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
+        <audio id="audio-leave" src="https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3"></audio>
+        <audio id="audio-request" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+        <!-- Landing View -->
+        <div id="landing-view" class="view active">
+            <div class="landing-content">
+                <h1>Infinity Meet</h1>
+                <p>Premium, secure video meetings for everyone.</p>
+
+                <div class="action-card">
+                    <button id="create-btn" class="primary-btn">
+                        <i class="fas fa-video"></i> New Meeting
+                    </button>
+
+                    <div class="divider">
+                        <span>or</span>
+                    </div>
+
+                    <div class="join-input-group">
+                        <i class="fas fa-keyboard"></i>
+                        <input type="text" id="meeting-code-input" placeholder="Enter a code or link">
+                        <button id="join-btn" class="secondary-btn" disabled>Join</button>
+                    </div>
+                </div>
+            </div>
+            <div class="landing-visual">
+                <div class="circle c1"></div>
+                <div class="circle c2"></div>
+            </div>
+        </div>
+
+        <!-- Lobby View (Profile Setup) -->
+        <div id="lobby-view" class="view">
+            <div class="lobby-card glass-panel">
+                <h2>Get Ready</h2>
+                <div class="avatar-section">
+                    <img id="avatar-preview" src="https://api.dicebear.com/7.x/avataaars/svg?seed=User" alt="Avatar">
+                    <div class="avatar-controls">
+                        <button id="random-avatar-btn" class="icon-btn" title="Randomize"><i
+                                class="fas fa-dice"></i></button>
+                        <label for="upload-avatar" class="icon-btn" title="Upload Image"><i
+                                class="fas fa-upload"></i></label>
+                        <input type="file" id="upload-avatar" accept="image/*" hidden>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Your Name</label>
+                    <input type="text" id="username-input" placeholder="Enter your name" value="Guest">
+                </div>
+
+                <!-- Meeting Type Selection (Only for host) -->
+                <div id="meeting-type-section" class="meeting-type-section hidden">
+                    <label>Meeting Type</label>
+                    <div class="meeting-type-toggle">
+                        <button id="type-public" class="type-btn active" data-type="public">
+                            <i class="fas fa-globe"></i>
+                            <span>Public</span>
+                            <small>Anyone can join</small>
+                        </button>
+                        <button id="type-private" class="type-btn" data-type="private">
+                            <i class="fas fa-lock"></i>
+                            <span>Private</span>
+                            <small>Approval required</small>
+                        </button>
+                    </div>
+                    <div id="password-wrapper" class="password-wrapper hidden">
+                        <input type="password" id="meeting-password-input"
+                            placeholder="Set Meeting Password (Optional)">
+                    </div>
+                </div>
+
+                <div class="device-preview">
+                    <p class="status-text" id="lobby-status">Checking permissions...</p>
+                </div>
+                <div class="lobby-actions">
+                    <button id="enter-meeting-btn" class="primary-btn full-width">Enter Meeting</button>
+                    <button id="back-to-home-btn" class="text-btn">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waiting Room View (For private meetings) -->
+        <div id="waiting-room-view" class="view">
+            <div class="waiting-room-container">
+                <div class="waiting-room-card glass-panel">
+                    <div class="waiting-glow"></div>
+                    <div class="waiting-spinner">
+                        <div class="spinner-ring"></div>
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <h1 class="big-status">WAITING TO BE ACCEPTED</h1>
+                    <p id="waiting-status" class="sub-status">The meeting owner will let you in shortly...</p>
+
+                    <div class="waiting-user-info">
+                        <img id="waiting-avatar" src="" alt="Your Avatar">
+                        <div class="user-details">
+                            <span id="waiting-name">You</span>
+                            <small>Requesting to join</small>
+                        </div>
+                    </div>
+
+                    <div class="waiting-actions">
+                        <button id="cancel-join-btn" class="text-btn danger">Cancel Request</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meeting Meeting View -->
+        <div id="meeting-view" class="view">
+            <div class="meeting-header">
+                <div class="meeting-info">
+                    <span id="meeting-id-display">Code: ...</span>
+                    <button id="copy-btn" title="Copy Info"><i class="far fa-copy"></i></button>
+                    <span id="meeting-type-badge" class="meeting-type-badge public">Public</span>
+                    <button id="meeting-lock-btn" class="host-only icon-btn hidden" title="Lock Meeting">
+                        <i class="fas fa-unlock"></i>
+                    </button>
+                </div>
+                <div class="header-center">
+                    <div class="meeting-timer" id="meeting-timer">
+                        <i class="fas fa-clock"></i>
+                        <span id="timer-display">00:00</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="header-btn" id="participants-toggle" title="Participants">
+                        <i class="fas fa-users"></i>
+                        <span id="participant-count">1</span>
+                    </button>
+                    <div class="clock" id="clock">12:00 PM</div>
+                </div>
+            </div>
+
+            <div id="video-grid" class="video-grid">
+                <!-- Videos will be added here dynamically -->
+            </div>
+
+            <!-- Pinned Poll Overlay -->
+            <div id="pinned-poll-overlay" class="pinned-poll-overlay hidden">
+                <div class="pinned-poll-header">
+                    <i class="fas fa-poll"></i>
+                    <span>Active Poll</span>
+                    <div class="pinned-poll-actions">
+                        <button id="delete-poll-btn-pinned" class="host-only danger-btn hidden" title="Delete Poll"><i
+                                class="fas fa-trash"></i></button>
+                        <button id="view-poll-btn">View Details</button>
+                    </div>
+                </div>
+                <div class="pinned-poll-body">
+                    <div id="pinned-poll-question">...</div>
+                    <div id="pinned-poll-options" class="pinned-poll-options"></div>
+                    <div id="pinned-poll-status">0 votes</div>
+                </div>
+            </div>
+
+            <!-- Emoji Reactions Container -->
+            <div id="reactions-container" class="reactions-container"></div>
+
+            <div class="controls-bar">
+                <button class="control-btn" id="audio-toggle" title="Toggle Microphone">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="control-btn" id="video-toggle" title="Toggle Camera">
+                    <i class="fas fa-video"></i>
+                </button>
+                <button class="control-btn" id="screen-share-btn" title="Share Screen">
+                    <i class="fas fa-desktop"></i>
+                </button>
+                <button class="control-btn" id="record-toggle" title="Record Meeting">
+                    <i class="fas fa-circle"></i>
+                    <span class="record-badge hidden">REC</span>
+                </button>
+                <button class="control-btn" id="hand-raise-btn" title="Raise Hand">
+                    <i class="fas fa-hand-paper"></i>
+                </button>
+                <button class="control-btn" id="whiteboard-toggle" title="Collaborative Whiteboard">
+                    <i class="fas fa-chalkboard"></i>
+                </button>
+                <div class="control-btn reactions-trigger" id="reactions-trigger" title="Reactions">
+                    <i class="fas fa-smile"></i>
+                    <div class="reactions-panel" id="reactions-panel">
+                        <button class="reaction-btn" data-emoji="👍">👍</button>
+                        <button class="reaction-btn" data-emoji="❤️">❤️</button>
+                        <button class="reaction-btn" data-emoji="😂">😂</button>
+                        <button class="reaction-btn" data-emoji="👏">👏</button>
+                        <button class="reaction-btn" data-emoji="🎉">🎉</button>
+                        <button class="reaction-btn" data-emoji="🔥">🔥</button>
+                    </div>
+                </div>
+                <button class="control-btn" id="chat-toggle-btn" title="Chat">
+                    <i class="fas fa-comment-alt"></i>
+                    <span class="badge hidden" id="chat-badge"></span>
+                </button>
+                <button class="control-btn host-only hidden" id="mute-all-btn" title="Mute All">
+                    <i class="fas fa-volume-mute"></i>
+                </button>
+                <div class="control-btn" id="more-toggle" title="More Options">
+                    <i class="fas fa-ellipsis-v"></i>
+                    <div class="more-options-panel" id="more-options-panel">
+                        <button id="mirror-btn"><i class="fas fa-arrows-alt-h"></i> Mirror Video</button>
+                        <button id="pip-btn"><i class="fas fa-external-link-alt"></i> Picture-in-Picture</button>
+                        <button id="captions-btn"><i class="fas fa-closed-captioning"></i> Live Captions</button>
+                    </div>
+                </div>
+                <button class="control-btn leave-btn" id="leave-btn" title="Leave Call">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div id="meeting-loading" class="meeting-loading">
+                <div class="loading-content">
+                    <div class="loading-spinner">
+                        <div class="spinner-ring"></div>
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <h2>Connecting to Meeting</h2>
+                    <p id="loading-status">Setting up your connection...</p>
+                    <div class="loading-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Sidebar -->
+        <div id="chat-sidebar" class="chat-sidebar">
+            <div class="chat-header">
+                <h3>In-Call Messages</h3>
+                <button id="close-chat"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <!-- Messages go here -->
+                <div class="message system">
+                    <span>Welcome to the chat!</span>
+                </div>
+            </div>
+            <div class="chat-controls">
+                <select id="chat-recipient">
+                    <option value="everyone">Everyone</option>
+                </select>
+                <div class="chat-actions">
+                    <button id="poll-trigger" class="host-only hidden" title="Create Poll"><i
+                            class="fas fa-poll"></i></button>
+                    <button id="file-trigger" title="Share File"><i class="fas fa-file-upload"></i></button>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="file" id="file-input" style="display: none;">
+                <div class="emoji-picker-wrapper">
+                    <button id="emoji-trigger" title="Emojis"><i class="fas fa-smile"></i></button>
+                    <div id="emoji-picker" class="emoji-picker hidden"></div>
+                </div>
+                <input type="text" id="chat-input" placeholder="Send a message...">
+                <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+
+        <!-- Participants Sidebar -->
+        <div id="participants-sidebar" class="participants-sidebar">
+            <div class="sidebar-header">
+                <h3>Participants (<span id="sidebar-participant-count">1</span>)</h3>
+                <button id="close-participants"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="participants-list" id="participants-list">
+                <!-- Participants will be added here dynamically -->
+            </div>
+        </div>
+
+        <!-- Join Requests Panel (Host only, Private meetings) -->
+        <div id="join-requests-panel" class="join-requests-panel hidden">
+            <div class="requests-header">
+                <i class="fas fa-user-clock"></i>
+                <span>Waiting to Join</span>
+                <span class="request-count" id="request-count">0</span>
+            </div>
+            <div class="requests-list" id="requests-list">
+                <!-- Join requests will be added here dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Whiteboard Overlay -->
+    <div id="whiteboard-overlay" class="whiteboard-overlay hidden">
+        <div class="whiteboard-header">
+            <h3><i class="fas fa-chalkboard"></i> Collaborative Whiteboard</h3>
+            <div class="whiteboard-actions">
+                <button id="clear-whiteboard" class="icon-btn" title="Clear Canvas"><i
+                        class="fas fa-trash"></i></button>
+                <button id="close-whiteboard" class="icon-btn" title="Close"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+        <canvas id="whiteboard-canvas"></canvas>
+    </div>
+
+    <!-- Live Captions -->
+    <div id="captions-container" class="captions-container hidden">
+        <div id="captions-text"></div>
+    </div>
+
+    <!-- Permission Request Modal -->
+    <div id="permission-modal" class="modal">
+        <div class="modal-content glass-panel">
+            <h2 id="permission-title">Permission Request</h2>
+            <p id="permission-message"></p>
+            <div class="modal-actions">
+                <button id="deny-permission-btn" class="secondary-btn">Deny</button>
+                <button id="approve-permission-btn" class="primary-btn">Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">Message</div>
+
+    <!-- Polls Modal -->
+    <div id="poll-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Polls</h3>
+                <button id="close-poll-modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="poll-create-view">
+                <div class="form-group">
+                    <label>Question</label>
+                    <input type="text" id="poll-question" placeholder="Enter your question...">
+                </div>
+                <div id="poll-options-container">
+                    <div class="form-group">
+                        <input type="text" class="poll-option-input" placeholder="Option 1">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="poll-option-input" placeholder="Option 2">
+                    </div>
+                </div>
+                <button id="add-option-btn" class="secondary-btn"><i class="fas fa-plus"></i> Add Option</button>
+                <button id="create-poll-btn" class="primary-btn">Create Poll</button>
+            </div>
+            <div id="poll-active-view" class="hidden">
+                <h4 id="active-poll-question"></h4>
+                <div id="active-poll-options"></div>
+                <div class="poll-footer">
+                    <p id="poll-vote-count">0 votes</p>
+                    <button id="delete-poll-btn-modal" class="host-only danger-btn hidden">Delete Poll</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="script.js"></script>
+</body>
+
+</html>
